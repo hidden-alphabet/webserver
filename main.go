@@ -26,47 +26,71 @@ type User struct {
   Email    string `json:"email"`
 }
 
-func (s *Server) CreateUser(w http.ResponseWriter, r *http.Request) {
+func (s *Server) HandleUser(w http.ResponseWriter, r *http.Request) {
   user := User{}
+
   data, err := ioutil.ReadAll(r.Body)
   if err != nil {
-    log.Println("Error while reading POST body.")
     log.Println(err)
     w.WriteHeader(http.StatusExpectationFailed)
     return
   }
-
-  log.Println("Creating user")
 
   err = json.Unmarshal(data, &user)
   if err != nil {
-    log.Println("Error while parsing JSON.")
     log.Println(err)
     w.WriteHeader(http.StatusExpectationFailed)
     return
   }
 
-  salt := make([]byte, 2056)
-  _, err = rand.Read(salt)
+  tx, err := s.database.Begin()
   if err != nil {
-    log.Println("Error while generating salt.")
+	  log.Println(err)
+  }
+  defer tx.Rollback()
+
+  err = func(u *User) error {
+    switch r.Method {
+      case "POST": return user.Create(tx)
+    }
+    return nil
+  }(&user)
+
+  if err != nil {
     log.Println(err)
     w.WriteHeader(http.StatusExpectationFailed)
-    return
+  } else {
+    w.WriteHeader(http.StatusOK)
+  }
+}
+
+func (u *User) Create(tx *sql.Tx) error {
+  salt := make([]byte, 2056)
+  _, err := rand.Read(salt)
+  if err != nil {
+    return err
   }
 
-  hash := argon2.IDKey([]byte(user.Password), salt, 1, 64*1024, 4, 32)
+  hash := argon2.IDKey([]byte(u.Password), salt, 1, 64*1024, 4, 32)
 
   query := "INSERT INTO web.user (name, email, hash, salt) VALUES ($1, $2, $3, $4)"
-  _, err = s.database.Query(query, user.Username, user.Email, hash, salt)
+  stmt, err := tx.Prepare(query)
   if err != nil {
-    log.Println("Error exeuting SQL query.")
-    log.Println(err)
-    w.WriteHeader(http.StatusExpectationFailed)
-    return
+    return err
+  }
+  defer stmt.Close()
+
+  stmt.Exec(u.Username, u.Email, hash, salt)
+	if err != nil {
+    return err
+	}
+
+  err = tx.Commit()
+  if err != nil {
+    return err
   }
 
-  w.WriteHeader(http.StatusOK)
+  return nil
 }
 
 func resolveDatabaseURL(env string) string {
@@ -121,7 +145,7 @@ func main() {
   s := &Server{ router, db }
 
   api := router.PathPrefix("/api").Subrouter()
-  api.HandleFunc("/user", s.CreateUser).Methods("POST")
+  api.HandleFunc("/user", s.HandleUser).Methods("POST")
 
   http.Handle("/", handlers.LoggingHandler(os.Stdout, router))
   log.Println("Server started at 0.0.0.0:8081.")
