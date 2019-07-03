@@ -6,9 +6,12 @@ import (
   "fmt"
   "net/http"
   "io/ioutil"
+  "crypto/rand"
   "database/sql"
+  "encoding/json"
   _ "github.com/lib/pq"
   "github.com/gorilla/mux"
+  "golang.org/x/crypto/argon2"
   "github.com/gorilla/handlers"
 )
 
@@ -17,7 +20,54 @@ type Server struct {
   database *sql.DB
 }
 
+type User struct {
+  Username string `json:"username"`
+  Password string `json:"password"`
+  Email    string `json:"email"`
+}
 
+func (s *Server) CreateUser(w http.ResponseWriter, r *http.Request) {
+  user := User{}
+  data, err := ioutil.ReadAll(r.Body)
+  if err != nil {
+    log.Println("Error while reading POST body.")
+    log.Println(err)
+    w.WriteHeader(http.StatusExpectationFailed)
+    return
+  }
+
+  log.Println("Creating user")
+
+  err = json.Unmarshal(data, &user)
+  if err != nil {
+    log.Println("Error while parsing JSON.")
+    log.Println(err)
+    w.WriteHeader(http.StatusExpectationFailed)
+    return
+  }
+
+  salt := make([]byte, 2056)
+  _, err = rand.Read(salt)
+  if err != nil {
+    log.Println("Error while generating salt.")
+    log.Println(err)
+    w.WriteHeader(http.StatusExpectationFailed)
+    return
+  }
+
+  hash := argon2.IDKey([]byte(user.Password), salt, 1, 64*1024, 4, 32)
+
+  query := "INSERT INTO web.user (name, email, hash, salt) VALUES ($1, $2, $3, $4)"
+  _, err = s.database.Query(query, user.Username, user.Email, hash, salt)
+  if err != nil {
+    log.Println("Error exeuting SQL query.")
+    log.Println(err)
+    w.WriteHeader(http.StatusExpectationFailed)
+    return
+  }
+
+  w.WriteHeader(http.StatusOK)
+}
 
 func resolveDatabaseURL(env string) string {
   template := "postgres://%s:%s@%s:%s/%s?sslmode=disable"
@@ -71,6 +121,7 @@ func main() {
   s := &Server{ router, db }
 
   api := router.PathPrefix("/api").Subrouter()
+  api.HandleFunc("/user", s.CreateUser).Methods("POST")
 
   http.Handle("/", handlers.LoggingHandler(os.Stdout, router))
   log.Println("Server started at 0.0.0.0:8081.")
