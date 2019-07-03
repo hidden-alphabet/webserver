@@ -12,6 +12,11 @@ import (
   "github.com/gorilla/handlers"
 )
 
+type Server struct {
+  router *mux.Router
+  database *sql.DB
+}
+
 
 
 func resolveDatabaseURL(env string) string {
@@ -62,6 +67,11 @@ func main() {
   log.Println("Connected to database.")
 
   router := mux.NewRouter()
+
+  s := &Server{ router, db }
+
+  api := router.PathPrefix("/api").Subrouter()
+
   http.Handle("/", handlers.LoggingHandler(os.Stdout, router))
   log.Println("Server started at 0.0.0.0:8081.")
 
