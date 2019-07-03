@@ -9,6 +9,12 @@ CREATE TABLE IF NOT EXISTS web.user(
     salt text not null
 );
 
+CREATE TABLE IF NOT EXISTS web.activated(
+  id serial primary key,
+  user_id int references web.user,
+  active boolean
+);
+
 CREATE TABLE IF NOT EXISTS web.resource(
     id serial primary key,
     user_id int references web.user,
