@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS web.user(
     salt bytea not null
 );
 
-CREATE TABLE IF NOT EXISTS web.activated(
+CREATE TABLE IF NOT EXISTS web.active(
   id serial primary key,
   user_id int references web.user,
   active boolean

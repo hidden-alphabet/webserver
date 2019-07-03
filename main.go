@@ -95,6 +95,16 @@ func (u *User) Create(tx *sql.Tx) error {
 		return err
 	}
 
+	expiration := time.Now().Add(365 * 24 * time.Hour)
+	cookie := http.Cookie{Name: "__hiddenalphabet_session", Value: "astaxie", Expires: expiration}
+	http.SetCookie(w, &cookie)
+
+	return nil
+}
+
+func (u *User) Update(tx *sql.Tx) error {
+	query := "UPDATE web.user SET  WHERE condition;"
+
 	return nil
 }
 
