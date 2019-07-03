@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+# h/t https://stackoverflow.com/a/12293994/8738498 
+ROOT=$(git rev-parse --show-toplevel)
+
+chmod +x $ROOT/scripts/pre-commit
+ln -s $ROOT/scripts/pre-commit $ROOT/.git/hooks/pre-commit
