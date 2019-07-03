@@ -5,8 +5,8 @@ CREATE TABLE IF NOT EXISTS web.user(
     id serial primary key,
     name text not null,
     email text not null,
-    hash text not null,
-    salt text not null
+    hash bytea not null,
+    salt bytea not null
 );
 
 CREATE TABLE IF NOT EXISTS web.activated(
