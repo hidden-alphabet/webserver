@@ -6,6 +6,8 @@ ENVFILE=$BASE/.env
 if [[ -f $ENVFILE ]]; then
   echo "[!] Using configuration file: $ENVFILE"
   source $ENVFILE
+  echo "[!] Waiting for database to start up"
+  sleep 2
 fi
 
 if [[ -z $PG_HOST ]]; then
