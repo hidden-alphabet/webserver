@@ -58,7 +58,10 @@ func (s *Server) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
 	}
 	defer tx.Rollback()
 
-	createUserQuery := "INSERT INTO web.user (name, email, hash, salt) VALUES ($1, $2, $3, $4) RETURNING id"
+	createUserQuery := "" +
+		"INSERT INTO web.user (name, email, hash, salt) " +
+		"VALUES ($1, $2, $3, $4) " +
+		"RETURNING id"
 	createUserStmt, err := tx.Prepare(createUserQuery)
 	if err != nil {
 		log.Println(err)
@@ -75,7 +78,9 @@ func (s *Server) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	createSessionQuery := "INSERT INTO web.session (user_id, active, token) VALUES ($1, $2, $3)"
+	createSessionQuery := "" +
+		"INSERT INTO web.session (user_id, active, token) " +
+		"VALUES ($1, $2, $3)"
 	createSessionStmt, err := tx.Prepare(createSessionQuery)
 	if err != nil {
 		log.Println(err)
@@ -182,12 +187,68 @@ func (s *Server) HandleUpdateUserEmail(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) HandleUpdateUserPassword(w http.ResponseWriter, r *http.Request) {
+	cookie, err := r.Cookie("__hiddenalphabet_session")
+	if err != nil {
+		switch err {
+		case http.ErrNoCookie:
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		default:
+			log.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+		return
+	}
+
+	user, err := userFromHttpRequest(r)
+	if err != nil {
+		log.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	if user.Password == "" {
+
+	}
+
 	tx, err := s.database.Begin()
 	if err != nil {
 		log.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 	defer tx.Rollback()
+
+	updatePasswordQuery := "" +
+		"UPDATE web.user AS wu " +
+		"SET password = $1 " +
+		"FROM web.session AS ws " +
+		"WHERE wu.id = ws.user_id " +
+		"AND ws.token = $2 " +
+		"AND wu.hash = $3"
+
+	updatePasswordStmt, err := tx.Prepare(updatePasswordQuery)
+	if err != nil {
+		log.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	defer updateEmailStmt.Close()
+
+	hash := argon2.IDKey([]byte(user.Password), salt, 1, 64*1024, 4, 32)
+
+	_, err = updatePasswordStmt.Exec(user.Email, cookie.Value)
+	if err != nil {
+		log.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		log.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 
 	w.WriteHeader(http.StatusOK)
 }
