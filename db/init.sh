@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 
-# h/t https://stackoverflow.com/a/4774063/8738498
-SCRIPTPATH="$( cd "$(dirname "$0")" ; pwd -P )"
-ENVFILE=$SCRIPTPATH/../.env
+BASE=$(git rev-parse --show-toplevel)
+ENVFILE=$BASE/.env
 
 if [[ -f $ENVFILE ]]; then
   echo "[!] Using configuration file: $ENVFILE"
@@ -58,10 +57,10 @@ echo "[!] creating database '$PG_DATABASE'"
 psql -h $PG_HOST -p 5432 -U postgres -d postgres -c "CREATE DATABASE $PG_DATABASE WITH OWNER $PG_USER;"
 
 echo "[!] creating schema"
-psql -h $PG_HOST -p 5432 -U $PG_USER -d $PG_DATABASE < $SCRIPTPATH/schema.sql
+psql -h $PG_HOST -p 5432 -U $PG_USER -d $PG_DATABASE < $BASE/db/schema.sql
 
 echo "[!] creating tables"
-psql -h $PG_HOST -p 5432 -U $PG_USER -d $PG_DATABASE < $SCRIPTPATH/tables.sql
+psql -h $PG_HOST -p 5432 -U $PG_USER -d $PG_DATABASE < $BASE/db/tables.sql
 
 echo "[!] removing public access to database"
-psql -h $PG_HOST -p 5432 -U $PG_USER -d $PG_DATABASE < $SCRIPTPATH/security.sql
+psql -h $PG_HOST -p 5432 -U $PG_USER -d $PG_DATABASE < $BASE/db/security.sql
