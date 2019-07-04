@@ -18,17 +18,24 @@ type User struct {
 	Email    string `json:"email"`
 }
 
-func (s *Server) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
+func userFromHttpRequest(r *http.Request) (*User, error) {
 	user := User{}
 
 	data, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		log.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
+		return nil, err
 	}
 
 	err = json.Unmarshal(data, &user)
+	if err != nil {
+		return nil, err
+	}
+
+	return &user, nil
+}
+
+func (s *Server) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
+	user, err := userFromHttpRequest(r)
 	if err != nil {
 		log.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -115,12 +122,61 @@ func (s *Server) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) HandleUpdateUserEmail(w http.ResponseWriter, r *http.Request) {
+	cookie, err := r.Cookie("__hiddenalphabet_session")
+	if err != nil {
+		switch err {
+		case http.ErrNoCookie:
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		default:
+			log.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+		return
+	}
+
+	user, err := userFromHttpRequest(r)
+	if err != nil {
+		log.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
 	tx, err := s.database.Begin()
 	if err != nil {
 		log.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
 	}
 	defer tx.Rollback()
+
+	updateEmailQuery := "" +
+		"UPDATE web.user AS wu " +
+		"SET email = $1 " +
+		"FROM web.session AS ws " +
+		"WHERE wu.id = ws.user_id " +
+		"AND ws.token = $2"
+
+	updateEmailStmt, err := tx.Prepare(updateEmailQuery)
+	if err != nil {
+		log.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	defer updateEmailStmt.Close()
+
+	_, err = updateEmailStmt.Exec(user.Email, cookie.Value)
+	if err != nil {
+		log.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		log.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
 
 	w.WriteHeader(http.StatusOK)
 }
