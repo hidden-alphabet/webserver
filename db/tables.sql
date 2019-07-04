@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS web.meta(
   email_confirmed boolean,
   email_confirmation_path text,
   created_at timestamp default now(),
-  last_active_at timestamp
+  last_active_at timestamp default now()
 );
 
 CREATE TABLE IF NOT EXISTS web.session(
