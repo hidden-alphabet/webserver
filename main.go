@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	_ "github.com/joho/godotenv/autoload"
 	"log"
 	"os"
 
