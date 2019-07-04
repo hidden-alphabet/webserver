@@ -12,7 +12,11 @@ CREATE TABLE IF NOT EXISTS web.user(
 CREATE TABLE IF NOT EXISTS web.meta(
   id serial primary key,
   user_id int references web.user,
-  active boolean
+  is_active boolean,
+  email_confirmed boolean,
+  email_confirmation_path text,
+  created_at timestamp default now(),
+  last_active_at timestamp
 );
 
 CREATE TABLE IF NOT EXISTS web.session(
