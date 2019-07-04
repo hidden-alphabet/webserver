@@ -1,5 +1,5 @@
 .env:
-	./db/init.sh
+	./services/postgresql/init.sh
 
 bin/main: .env
 	mkdir -p bin
@@ -8,7 +8,7 @@ bin/main: .env
 start: .env bin/main
 	docker run \
 		-d \
-		-v $(PWD)/db:/var/lib/postgresql \
+		-v $(PWD)/services/postgresql:/var/lib/postgresql \
 		-p 5432:5432 \
 		postgres
 	./bin/main &> logs.txt &
