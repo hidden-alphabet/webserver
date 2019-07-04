@@ -18,6 +18,8 @@ CREATE TABLE IF NOT EXISTS web.active(
 CREATE TABLE IF NOT EXISTS web.session(
   id serial primary key,
   user_id int references web.user,
+  created_at timestamp default now(),
+  active boolean,
   token bytea
 );
 

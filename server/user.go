@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/json"
 	_ "github.com/lib/pq"
+	"github.com/satori/go.uuid"
 	"golang.org/x/crypto/argon2"
 	"io/ioutil"
 	"log"
@@ -34,13 +35,6 @@ func (s *Server) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tx, err := s.database.Begin()
-	if err != nil {
-		log.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
-	}
-	defer tx.Rollback()
-
 	salt := make([]byte, 2056)
 	_, err = rand.Read(salt)
 	if err != nil {
@@ -50,16 +44,55 @@ func (s *Server) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
 
 	hash := argon2.IDKey([]byte(user.Password), salt, 1, 64*1024, 4, 32)
 
-	query := "INSERT INTO web.user (name, email, hash, salt) VALUES ($1, $2, $3, $4)"
-	stmt, err := tx.Prepare(query)
+	tx, err := s.database.Begin()
+	if err != nil {
+		log.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+	defer tx.Rollback()
+
+	createUserQuery := "INSERT INTO web.user (name, email, hash, salt) VALUES ($1, $2, $3, $4)"
+	createUserStmt, err := tx.Prepare(createUserQuery)
 	if err != nil {
 		log.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	defer stmt.Close()
+	defer createUserStmt.Close()
 
-	stmt.Exec(user.Username, user.Email, hash, salt)
+	res, err := createUserStmt.Exec(user.Username, user.Email, hash, salt)
+	if err != nil {
+		log.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	createSessionQuery := "INSERT INTO web.session (user_id, active, token) VALUES ($1, $2, $3)"
+	createSessionStmt, err := tx.Prepare(createSessionQuery)
+	if err != nil {
+		log.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	defer createUserStmt.Close()
+
+	uuidToken, err := uuid.NewV4()
+	if err != nil {
+		log.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	token := uuidToken.String()
+
+	id, err := res.LastInsertId()
+	if err != nil {
+		log.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	res, err = createSessionStmt.Exec(id, true, token)
 	if err != nil {
 		log.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -73,21 +106,29 @@ func (s *Server) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	expiration := time.Now().Add(24 * time.Hour)
+	oneYearFromNow := time.Now().Add(356 * 24 * time.Hour)
 	cookie := http.Cookie{
 		Name:     "__hiddenalphabet_session",
-		Value:    "test",
-		Expires:  expiration,
+		Value:    token,
+		Expires:  oneYearFromNow,
 		Secure:   true,
 		HttpOnly: true,
 	}
+
 	http.SetCookie(w, &cookie)
 
 	w.WriteHeader(http.StatusOK)
 }
 
 func (s *Server) HandleUpdateUser(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusNotImplemented)
+	tx, err := s.database.Begin()
+	if err != nil {
+		log.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+	defer tx.Rollback()
+
+	w.WriteHeader(http.StatusOK)
 }
 
 func (s *Server) HandleReadUser(w http.ResponseWriter, r *http.Request) {
