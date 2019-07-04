@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-for file in $(git diff --name-only | grep \.go); do
+for file in $(git diff --staged --name-only | grep \.go); do
   gofmt -l -s -w $file && \
     git add $file && \
     echo "[!] gofmt changed $file"
