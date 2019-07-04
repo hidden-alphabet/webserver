@@ -7,7 +7,6 @@ import (
 	"github.com/satori/go.uuid"
 	"golang.org/x/crypto/argon2"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"time"
 )
@@ -37,24 +36,23 @@ func userFromHttpRequest(r *http.Request) (*User, error) {
 func (s *Server) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
 	user, err := userFromHttpRequest(r)
 	if err != nil {
-		log.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	salt := make([]byte, 2056)
 	_, err = rand.Read(salt)
 	if err != nil {
-		log.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	hash := argon2.IDKey([]byte(user.Password), salt, 1, 64*1024, 4, 32)
 
 	tx, err := s.database.Begin()
 	if err != nil {
-		log.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 	defer tx.Rollback()
 
@@ -64,8 +62,7 @@ func (s *Server) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
 		"RETURNING id"
 	createUserStmt, err := tx.Prepare(createUserQuery)
 	if err != nil {
-		log.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	defer createUserStmt.Close()
@@ -73,8 +70,22 @@ func (s *Server) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
 	var id int64
 	err = createUserStmt.QueryRow(user.Username, user.Email, hash, salt).Scan(&id)
 	if err != nil {
-		log.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	createUserMetadataQuery := "" +
+		"INSERT INTO web.meta (user_id, is_active, email_confirmed, email_confirmation_path)" +
+		"VALUES ($1, $2, $3, $4)"
+	createUserMetadataStmt, err := tx.Prepare(createUserMetadataQuery)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	err = createUserMetadataStmt.Exec(id, true, false)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -83,16 +94,14 @@ func (s *Server) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
 		"VALUES ($1, $2, $3)"
 	createSessionStmt, err := tx.Prepare(createSessionQuery)
 	if err != nil {
-		log.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	defer createUserStmt.Close()
 
 	uuidToken, err := uuid.NewV4()
 	if err != nil {
-		log.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -100,15 +109,13 @@ func (s *Server) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
 
 	_, err = createSessionStmt.Exec(id, true, token)
 	if err != nil {
-		log.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	err = tx.Commit()
 	if err != nil {
-		log.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -132,25 +139,22 @@ func (s *Server) HandleUpdateUserEmail(w http.ResponseWriter, r *http.Request) {
 		switch err {
 		case http.ErrNoCookie:
 			w.WriteHeader(http.StatusUnauthorized)
-			return
 		default:
-			log.Println(err)
-			w.WriteHeader(http.StatusInternalServerError)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
 		}
-		return
 	}
 
 	user, err := userFromHttpRequest(r)
 	if err != nil {
-		log.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	tx, err := s.database.Begin()
 	if err != nil {
-		log.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 	defer tx.Rollback()
 
@@ -163,23 +167,20 @@ func (s *Server) HandleUpdateUserEmail(w http.ResponseWriter, r *http.Request) {
 
 	updateEmailStmt, err := tx.Prepare(updateEmailQuery)
 	if err != nil {
-		log.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	defer updateEmailStmt.Close()
 
 	_, err = updateEmailStmt.Exec(user.Email, cookie.Value)
 	if err != nil {
-		log.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	err = tx.Commit()
 	if err != nil {
-		log.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -192,18 +193,15 @@ func (s *Server) HandleUpdateUserPassword(w http.ResponseWriter, r *http.Request
 		switch err {
 		case http.ErrNoCookie:
 			w.WriteHeader(http.StatusUnauthorized)
-			return
 		default:
-			log.Println(err)
-			w.WriteHeader(http.StatusInternalServerError)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
 		}
-		return
 	}
 
 	user, err := userFromHttpRequest(r)
 	if err != nil {
-		log.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -213,10 +211,29 @@ func (s *Server) HandleUpdateUserPassword(w http.ResponseWriter, r *http.Request
 
 	tx, err := s.database.Begin()
 	if err != nil {
-		log.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 	defer tx.Rollback()
+
+	getUserHashQuery := "" +
+		"SELECT salt " +
+		"FROM web.user AS wu " +
+		"INNER JOIN web.session AS ws " +
+		"ON wu.id = ws.user_id " +
+		"WHERE ws.token = $1"
+	getUserHashStmt, err := tx.Prepare(getUserHashQuery)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	var salt []byte
+	err = getUserHashStmt.QueryRow().Scan(&salt)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
 	updatePasswordQuery := "" +
 		"UPDATE web.user AS wu " +
@@ -228,8 +245,7 @@ func (s *Server) HandleUpdateUserPassword(w http.ResponseWriter, r *http.Request
 
 	updatePasswordStmt, err := tx.Prepare(updatePasswordQuery)
 	if err != nil {
-		log.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	defer updateEmailStmt.Close()
@@ -238,15 +254,13 @@ func (s *Server) HandleUpdateUserPassword(w http.ResponseWriter, r *http.Request
 
 	_, err = updatePasswordStmt.Exec(user.Email, cookie.Value)
 	if err != nil {
-		log.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	err = tx.Commit()
 	if err != nil {
-		log.Println(err)
-		w.WriteHeader(http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
