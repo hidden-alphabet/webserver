@@ -1,7 +1,6 @@
 package server
 
 import (
-  "time"
 	"crypto/rand"
 	"encoding/json"
 	_ "github.com/lib/pq"
@@ -9,6 +8,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"time"
 )
 
 type User struct {
@@ -37,7 +37,7 @@ func (s *Server) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
 	tx, err := s.database.Begin()
 	if err != nil {
 		log.Println(err)
-    w.WriteHeader(http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
 	}
 	defer tx.Rollback()
 
@@ -45,7 +45,7 @@ func (s *Server) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
 	_, err = rand.Read(salt)
 	if err != nil {
 		log.Println(err)
-    w.WriteHeader(http.StatusInternalServerError)
+		w.WriteHeader(http.StatusInternalServerError)
 	}
 
 	hash := argon2.IDKey([]byte(user.Password), salt, 1, 64*1024, 4, 32)
@@ -70,20 +70,20 @@ func (s *Server) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
-    return
+		return
 	}
 
-  expiration := time.Now().Add(24 * time.Hour)
+	expiration := time.Now().Add(24 * time.Hour)
 	cookie := http.Cookie{
-    Name: "__hiddenalphabet_session",
-    Value: "test",
-    Expires: expiration,
-    Secure: true,
-    HttpOnly: true,
-  }
+		Name:     "__hiddenalphabet_session",
+		Value:    "test",
+		Expires:  expiration,
+		Secure:   true,
+		HttpOnly: true,
+	}
 	http.SetCookie(w, &cookie)
 
-  w.WriteHeader(http.StatusOK)
+	w.WriteHeader(http.StatusOK)
 }
 
 func (s *Server) HandleUpdateUser(w http.ResponseWriter, r *http.Request) {
