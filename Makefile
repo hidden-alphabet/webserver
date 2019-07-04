@@ -12,6 +12,7 @@ start: .env bin/main
 		-p 5432:5432 \
 		postgres
 	./bin/main &> logs.txt &
+	echo $(!) > server.pid
 
 clean:
 	rm -rf bin
