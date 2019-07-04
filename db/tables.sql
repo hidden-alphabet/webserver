@@ -15,6 +15,12 @@ CREATE TABLE IF NOT EXISTS web.active(
   active boolean
 );
 
+CREATE TABLE IF NOT EXISTS web.session(
+  id serial primary key,
+  user_id int references web.user,
+  token bytea
+);
+
 CREATE TABLE IF NOT EXISTS web.resource(
     id serial primary key,
     user_id int references web.user,
