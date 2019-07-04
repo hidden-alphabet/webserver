@@ -60,15 +60,13 @@ func (s *Server) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
 	}
 	defer createUserStmt.Close()
 
-	rows, err := createUserStmt.Query(user.Username, user.Email, hash, salt)
+	var id int64
+	err = createUserStmt.QueryRow(user.Username, user.Email, hash, salt).Scan(&id)
 	if err != nil {
 		log.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-
-	var id int64
-	rows.Scan(&id)
 
 	createSessionQuery := "INSERT INTO web.session (user_id, active, token) VALUES ($1, $2, $3)"
 	createSessionStmt, err := tx.Prepare(createSessionQuery)
@@ -116,7 +114,18 @@ func (s *Server) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (s *Server) HandleUpdateUser(w http.ResponseWriter, r *http.Request) {
+func (s *Server) HandleUpdateUserEmail(w http.ResponseWriter, r *http.Request) {
+	tx, err := s.database.Begin()
+	if err != nil {
+		log.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+	defer tx.Rollback()
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func (s *Server) HandleUpdateUserPassword(w http.ResponseWriter, r *http.Request) {
 	tx, err := s.database.Begin()
 	if err != nil {
 		log.Println(err)
