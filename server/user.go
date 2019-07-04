@@ -15,6 +15,22 @@ import (
 	"time"
 )
 
+func (s *Server) AuthorizationRequired(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		_, err := r.Cookie("__hiddenalphabet_session")
+		if err != nil {
+			switch err {
+			case http.ErrNoCookie:
+				w.WriteHeader(http.StatusUnauthorized)
+			default:
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+			}
+		} else {
+			h(w, r)
+		}
+	}
+}
+
 type User struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
@@ -178,20 +194,9 @@ func (s *Server) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
     }
 */
 func (s *Server) HandleUpdateUserEmail(w http.ResponseWriter, r *http.Request) {
-	cookie, err := r.Cookie("__hiddenalphabet_session")
-	if err != nil {
-		switch err {
-		case http.ErrNoCookie:
-			w.WriteHeader(http.StatusUnauthorized)
-		default:
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		}
-		return
-	}
-
 	user := User{}
 
-	err = user.FromRequest(r)
+	err := user.FromRequest(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -222,6 +227,12 @@ func (s *Server) HandleUpdateUserEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer updateEmailStmt.Close()
+
+	cookie, err := r.Cookie("__hiddenalphabet_session")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
 	_, err = updateEmailStmt.Exec(user.Email, cookie.Value)
 	if err != nil {
@@ -273,20 +284,9 @@ func (p *PasswordUpdate) FromRequest(r *http.Request) error {
     }
 */
 func (s *Server) HandleUpdateUserPassword(w http.ResponseWriter, r *http.Request) {
-	cookie, err := r.Cookie("__hiddenalphabet_session")
-	if err != nil {
-		switch err {
-		case http.ErrNoCookie:
-			w.WriteHeader(http.StatusUnauthorized)
-		default:
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-	}
-
 	update := PasswordUpdate{}
 
-	err = update.FromRequest(r)
+	err := update.FromRequest(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -312,6 +312,12 @@ func (s *Server) HandleUpdateUserPassword(w http.ResponseWriter, r *http.Request
 		"WHERE ws.token = $1"
 
 	getUserHashStmt, err := tx.Prepare(getUserHashQuery)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	cookie, err := r.Cookie("__hiddenalphabet_session")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

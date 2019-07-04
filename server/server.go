@@ -28,9 +28,9 @@ func (s *Server) Start() {
 	api := s.router.PathPrefix("/api").Subrouter()
 
 	api.HandleFunc("/user/create", s.HandleCreateUser).Methods("POST")
-	api.HandleFunc("/user/read", s.HandleReadUser).Methods("GET")
-	api.HandleFunc("/user/update/email", s.HandleUpdateUserEmail).Methods("PUT")
-	api.HandleFunc("/user/delete", s.HandleDeleteUser).Methods("DELETE")
+	api.HandleFunc("/user/update/email", s.AuthorizationRequired(s.HandleUpdateUserEmail)).Methods("PUT")
+	api.HandleFunc("/user/update/password", s.AuthorizationRequired(s.HandleUpdateUserPassword)).Methods("PUT")
+	api.HandleFunc("/user/delete", s.AuthorizationRequired(s.HandleDeleteUser)).Methods("DELETE")
 	s.router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
