@@ -30,12 +30,8 @@ if [[ -z $PG_PASSWORD ]]; then
   exit -1
 fi
 
-if [[ -f /.env ]]; then
-  echo "[!] Waiting for database to start up"
-  sleep 2
-fi
-
 CREATE_USER="CREATE USER $PG_USER WITH PASSWORD '$PG_PASSWORD' CREATEDB"
+CREATE_DATABASE="CREATE DATABASE $PG_DATABASE WITH OWNER $PG_USER"
 
 if [[ $PG_PASSWORD -eq default ]]; then
   TOMORROW=$(date -v +1d +'%Y-%m-%d')
@@ -56,7 +52,7 @@ echo "[!] creating user '$PG_USER'"
 psql -h $PG_HOST -p 5432 -U postgres -d postgres -c "$CREATE_USER;"
 
 echo "[!] creating database '$PG_DATABASE'"
-psql -h $PG_HOST -p 5432 -U postgres -d postgres -c "CREATE DATABASE $PG_DATABASE WITH OWNER $PG_USER;"
+psql -h $PG_HOST -p 5432 -U postgres -d postgres -c "$CREATE_DATABASE;"
 
 echo "[!] creating schema"
 psql -h $PG_HOST -p 5432 -U $PG_USER -d $PG_DATABASE < $BASE/db/schema.sql
