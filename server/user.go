@@ -2,12 +2,16 @@ package server
 
 import (
 	"crypto/rand"
+	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	_ "github.com/lib/pq"
 	"github.com/satori/go.uuid"
 	"golang.org/x/crypto/argon2"
 	"io/ioutil"
 	"net/http"
+	"net/url"
+	"reflect"
 	"time"
 )
 
@@ -17,24 +21,40 @@ type User struct {
 	Email    string `json:"email"`
 }
 
-func userFromHttpRequest(r *http.Request) (*User, error) {
-	user := User{}
-
+func (u *User) FromRequest(r *http.Request) error {
 	data, err := ioutil.ReadAll(r.Body)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	err = json.Unmarshal(data, &user)
+	err = json.Unmarshal(data, u)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return &user, nil
+	return nil
 }
 
+/*
+  Add a new user.
+
+  Route: /user/create
+  Method(s): POST
+  Example Request:
+    {
+      "username": "foo",
+      "password": "bar",
+      "email": "bax@baz.com
+    }
+  Example Response:
+    {
+      "status": "successful"
+    }
+*/
 func (s *Server) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
-	user, err := userFromHttpRequest(r)
+	user := User{}
+
+	err := user.FromRequest(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -83,7 +103,17 @@ func (s *Server) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = createUserMetadataStmt.Exec(id, true, false)
+	emailConfirmationKeyData := make([]byte, 64)
+	_, err = rand.Read(salt)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	emailConfirmationKey := url.QueryEscape(base64.StdEncoding.EncodeToString(emailConfirmationKeyData))
+	emailConfirmationPath := fmt.Sprintf("/email/update/confirmation/%s", emailConfirmationKey)
+
+	_, err = createUserMetadataStmt.Exec(id, true, false, emailConfirmationPath)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -133,6 +163,20 @@ func (s *Server) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+/*
+  Add a new user.
+
+  Route: /user/update/email
+  Method(s): PUT
+  Example Request:
+    {
+      "new": "test@gmail.com"
+    }
+  Example Response:
+    {
+      "status": "successful"
+    }
+*/
 func (s *Server) HandleUpdateUserEmail(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie("__hiddenalphabet_session")
 	if err != nil {
@@ -141,13 +185,20 @@ func (s *Server) HandleUpdateUserEmail(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusUnauthorized)
 		default:
 			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
 		}
+		return
 	}
 
-	user, err := userFromHttpRequest(r)
+	user := User{}
+
+	err = user.FromRequest(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if user.Email == "" {
+		http.Error(w, "No email provided.", http.StatusPreconditionFailed)
 		return
 	}
 
@@ -187,6 +238,40 @@ func (s *Server) HandleUpdateUserEmail(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+type PasswordUpdate struct {
+	Old string "json:`old`"
+	New string "json:`new`"
+}
+
+func (p *PasswordUpdate) FromRequest(r *http.Request) error {
+	data, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(data, p)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+/*
+  Add a new user.
+
+  Route: /user/update/password
+  Method(s): PUT
+  Example Request:
+    {
+      "old": "old-password",
+      "new": "new-password"
+    }
+  Example Response:
+    {
+      "status": "successful"
+    }
+*/
 func (s *Server) HandleUpdateUserPassword(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie("__hiddenalphabet_session")
 	if err != nil {
@@ -199,14 +284,17 @@ func (s *Server) HandleUpdateUserPassword(w http.ResponseWriter, r *http.Request
 		}
 	}
 
-	user, err := userFromHttpRequest(r)
+	update := PasswordUpdate{}
+
+	err = update.FromRequest(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	if user.Password == "" {
-
+	if update.Old == "" || update.New == "" {
+		http.Error(w, "Cannot have an empty password.", http.StatusPreconditionFailed)
+		return
 	}
 
 	tx, err := s.database.Begin()
@@ -217,42 +305,55 @@ func (s *Server) HandleUpdateUserPassword(w http.ResponseWriter, r *http.Request
 	defer tx.Rollback()
 
 	getUserHashQuery := "" +
-		"SELECT salt " +
+		"SELECT hash, salt " +
 		"FROM web.user AS wu " +
 		"INNER JOIN web.session AS ws " +
 		"ON wu.id = ws.user_id " +
 		"WHERE ws.token = $1"
+
 	getUserHashStmt, err := tx.Prepare(getUserHashQuery)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	var salt []byte
-	err = getUserHashStmt.QueryRow().Scan(&salt)
+	var oldHash []byte
+	var oldSalt []byte
+	err = getUserHashStmt.QueryRow(cookie.Value).Scan(&oldHash, &oldSalt)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
+	if reflect.DeepEqual(oldHash, argon2.IDKey([]byte(update.Old), oldSalt, 1, 64*1024, 4, 32)) {
+		http.Error(w, "Incorrect Password", http.StatusUnauthorized)
+		return
+	}
+
 	updatePasswordQuery := "" +
 		"UPDATE web.user AS wu " +
-		"SET password = $1 " +
+		"SET hash = $1, salt = $2 " +
 		"FROM web.session AS ws " +
 		"WHERE wu.id = ws.user_id " +
-		"AND ws.token = $2 " +
-		"AND wu.hash = $3"
+		"AND ws.token = $3"
 
 	updatePasswordStmt, err := tx.Prepare(updatePasswordQuery)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	defer updateEmailStmt.Close()
+	defer updatePasswordStmt.Close()
 
-	hash := argon2.IDKey([]byte(user.Password), salt, 1, 64*1024, 4, 32)
+	newSalt := make([]byte, 2056)
+	_, err = rand.Read(newSalt)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
-	_, err = updatePasswordStmt.Exec(user.Email, cookie.Value)
+	newHash := argon2.IDKey([]byte(update.New), newSalt, 1, 64*1024, 4, 32)
+
+	_, err = updatePasswordStmt.Exec(newHash, newSalt, cookie.Value)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
