@@ -25,6 +25,7 @@ services:
     volumes:
       - ./services/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./services/nginx/public:/var/www/html:ro
+      - ./services/nginx/public/assets/:/var/www/assets:ro
       - /etc/letsencrypt:/etc/letsencrypt/:ro
     networks:
       - backend
