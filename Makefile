@@ -11,7 +11,10 @@ clean:
 	rm -rf bin
 	rm .env
 
-bundle:
+build:
+	webpack
+
+bundle: build
 	zip -r bundle.zip services
 	zip -r bundle.zip scripts
 	zip bundle.zip docker-compose.yml
