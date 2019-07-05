@@ -1,22 +1,13 @@
-.env:
-	./services/postgresql/init.sh
-
-bin/main: .env
-	mkdir -p bin
-	go build -o bin/main main.go
+build:
+	docker build -t hiddenalphabet-api-server .
 
 start: .env bin/main
-	docker run \
-		-d \
-		-v $(PWD)/services/postgresql:/var/lib/postgresql \
-		-p 5432:5432 \
-		postgres
-	./bin/main &> logs.txt &
-	echo $(!) > server.pid
+	docker-compose up -d
+	./services/postgresql/init.sh
+
+shutdown:
+	docker-compose down
 
 clean:
 	rm -rf bin
 	rm .env
-
-shutdown:
-	docker stop $(shell docker ps -l -q -f ancestor=postgres)
