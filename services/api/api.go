@@ -2,7 +2,6 @@ package api
 
 import (
 	"github.com/gorilla/mux"
-	"routes"
 )
 
 type API struct {
