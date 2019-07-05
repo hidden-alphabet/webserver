@@ -15,6 +15,10 @@ import (
 	"time"
 )
 
+type APIResponse struct {
+	Status string
+}
+
 func (s *Server) SessionRequired(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		_, err := r.Cookie("__hiddenalphabet_session")
@@ -177,6 +181,11 @@ func (s *Server) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, &cookie)
 
 	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+
+	json.NewEncoder(w).Encode(APIResponse{
+		Status: "successful",
+	})
 }
 
 /*
@@ -247,6 +256,11 @@ func (s *Server) HandleUpdateUserEmail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+
+	json.NewEncoder(w).Encode(APIResponse{
+		Status: "successful",
+	})
 }
 
 type PasswordUpdate struct {
@@ -372,6 +386,11 @@ func (s *Server) HandleUpdateUserPassword(w http.ResponseWriter, r *http.Request
 	}
 
 	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+
+	json.NewEncoder(w).Encode(APIResponse{
+		Status: "successful",
+	})
 }
 
 func (s *Server) HandleReadUser(w http.ResponseWriter, r *http.Request) {
