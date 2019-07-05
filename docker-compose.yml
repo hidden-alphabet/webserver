@@ -10,7 +10,8 @@ services:
     ports:
       - 5432
   api:
-    image: hiddenalphabet-api-server
+    image: api
+    build: ./services/api
     networks:
       - backend
     ports:
