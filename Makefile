@@ -1,3 +1,5 @@
+# TODO: scp backed make for integrated cross machine deploys
+
 build:
 	docker build -t hiddenalphabet-api-server .
 
@@ -25,3 +27,6 @@ upload: bundle
 	ssh ubuntu@$(SERVER_HOST) rm -rf ~/
 	scp bundle.zip ubuntu@$(SERVER_HOST):~/
 	ssh ubuntu@$(SERVER_HOST) unzip bundle.zip
+
+deploy: upload
+	ssh ubuntu@$(SERVER_HOST) docker-compose restart
