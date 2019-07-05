@@ -86,7 +86,7 @@ const CallToAction = _ =>
   </div>
 
 const Home = _ =>
-  <ImageBackground url="https://source.unsplash.com/FQ7cRFUU1y0/1700x1000">
+  <ImageBackground url="./static/background.jpg">
     <Fontified>
       <Header>
         {/*}
