@@ -93,7 +93,7 @@ func (s *Server) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
 	defer tx.Rollback()
 
 	createUserQuery := "" +
-		"INSERT INTO web.user (name, email, hash, salt) " +
+		"INSERT INTO user.account (name, email, hash, salt) " +
 		"VALUES ($1, $2, $3, $4) " +
 		"RETURNING id"
 	createUserStmt, err := tx.Prepare(createUserQuery)
@@ -111,7 +111,7 @@ func (s *Server) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	createUserMetadataQuery := "" +
-		"INSERT INTO web.meta (user_id, is_active, email_confirmed, email_confirmation_path)" +
+		"INSERT INTO web.meta (account_id, is_active, email_confirmed, email_confirmation_path)" +
 		"VALUES ($1, $2, $3, $4)"
 	createUserMetadataStmt, err := tx.Prepare(createUserMetadataQuery)
 	if err != nil {
@@ -136,7 +136,7 @@ func (s *Server) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	createSessionQuery := "" +
-		"INSERT INTO web.session (user_id, active, token) " +
+		"INSERT INTO user.session (account_id, active, token) " +
 		"VALUES ($1, $2, $3)"
 	createSessionStmt, err := tx.Prepare(createSessionQuery)
 	if err != nil {
@@ -215,11 +215,11 @@ func (s *Server) HandleUpdateUserEmail(w http.ResponseWriter, r *http.Request) {
 	defer tx.Rollback()
 
 	updateEmailQuery := "" +
-		"UPDATE web.user AS wu " +
+		"UPDATE user.account AS ua " +
 		"SET email = $1 " +
-		"FROM web.session AS ws " +
-		"WHERE wu.id = ws.user_id " +
-		"AND ws.token = $2"
+		"FROM user.session AS us " +
+		"WHERE ua.id = us.account_id " +
+		"AND us.token = $2"
 
 	updateEmailStmt, err := tx.Prepare(updateEmailQuery)
 	if err != nil {
@@ -306,10 +306,10 @@ func (s *Server) HandleUpdateUserPassword(w http.ResponseWriter, r *http.Request
 
 	getUserHashQuery := "" +
 		"SELECT hash, salt " +
-		"FROM web.user AS wu " +
-		"INNER JOIN web.session AS ws " +
-		"ON wu.id = ws.user_id " +
-		"WHERE ws.token = $1"
+		"FROM user.account AS ua " +
+		"INNER JOIN user.session AS us " +
+		"ON ua.id = us.account_id " +
+		"WHERE us.token = $1"
 
 	getUserHashStmt, err := tx.Prepare(getUserHashQuery)
 	if err != nil {
@@ -337,11 +337,11 @@ func (s *Server) HandleUpdateUserPassword(w http.ResponseWriter, r *http.Request
 	}
 
 	updatePasswordQuery := "" +
-		"UPDATE web.user AS wu " +
+		"UPDATE user.account AS ua " +
 		"SET hash = $1, salt = $2 " +
-		"FROM web.session AS ws " +
-		"WHERE wu.id = ws.user_id " +
-		"AND ws.token = $3"
+		"FROM user.session AS us " +
+		"WHERE ua.id = us.account_id " +
+		"AND us.token = $3"
 
 	updatePasswordStmt, err := tx.Prepare(updatePasswordQuery)
 	if err != nil {
