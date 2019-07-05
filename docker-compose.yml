@@ -4,7 +4,7 @@ services:
   postgres:
     image: postgres
     volumes:
-      - ./services/postgresql:/var/lib/postgresql
+      - ./services/postgres:/var/lib/postgresql
     networks:
       - backend
     ports:
