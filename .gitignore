@@ -1,3 +1,4 @@
 bin
 .env
 *.pid
+services/postgres/data
