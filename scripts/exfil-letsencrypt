@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+
+function exfil {
+  local ROOT_DOMAIN=$1
+
+  ssh ${SERVER_USER}@${SERVER_HOST} sudo mv -r -L /etc/letsencrypt/live/$ROOT_DOMAIN ~/
+  ssh ${SERVER_USER}@${SERVER_HOST} sudo chown -R ubuntu:ubuntu ~/$ROOT_DOMAIN 
+  sudo scp -r ${SERVER_USER}@${SERVER_HOST}:~/$ROOT_DOMAIN /etc/letsencrypt/
+  sudo ln -s /etc/letsencrypt/$ROOT_DOMAIN /etc/letsencrypt/live/$ROOT_DOMAIN
+}
+
+exfil hiddenalphabet.com
