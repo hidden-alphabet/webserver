@@ -4,7 +4,7 @@ services:
   postgres:
     image: postgres
     volumes:
-      - $PWD/services/postgresql:/var/lib/postgresql
+      - ./services/postgresql:/var/lib/postgresql
     networks:
       - backend
     ports:
@@ -22,9 +22,9 @@ services:
   nginx:
     image: nginx
     volumes:
-      - $PWD/services/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - $PWD/public:/var/www/html:ro
-      - /etc/letsencrypt/:/etc/letsencrypt/:ro
+      - ./services/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./services/nginx/public:/var/www/html:ro
+      - /etc/letsencrypt:/etc/letsencrypt/:ro
     networks:
       - backend
     ports:
