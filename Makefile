@@ -1,8 +1,7 @@
 # TODO: scp backed make for integrated cross machine deploys
 
-start: .env bin/main
+start:
 	docker-compose up -d
-	./services/postgresql/init.sh
 
 shutdown:
 	docker-compose down
