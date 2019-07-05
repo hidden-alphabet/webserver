@@ -31,7 +31,7 @@ func (s *Session) Create(tx *sql.Tx) (string, error) {
 	}
 	defer stmt.Close()
 
-	_, err = stmt.Exec(s.AccountID, token.Bytes(), false)
+	_, err = stmt.Exec(s.AccountID, token.Bytes(), true)
 	if err != nil {
 		return "", err
 	}
