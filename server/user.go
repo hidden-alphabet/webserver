@@ -263,12 +263,12 @@ func (s *Server) HandleUpdateUserEmail(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-type PasswordUpdate struct {
+type UpdatePassword struct {
 	Old string "json:`old`"
 	New string "json:`new`"
 }
 
-func (p *PasswordUpdate) FromRequest(r *http.Request) error {
+func (p *UpdatePassword) FromRequest(r *http.Request) error {
 	data, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		return err
@@ -298,7 +298,7 @@ func (p *PasswordUpdate) FromRequest(r *http.Request) error {
     }
 */
 func (s *Server) HandleUpdateUserPassword(w http.ResponseWriter, r *http.Request) {
-	update := PasswordUpdate{}
+	update := UpdatePassword{}
 
 	err := update.FromRequest(r)
 	if err != nil {
