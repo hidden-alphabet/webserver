@@ -2,9 +2,9 @@ package api
 
 import (
 	"database/sql"
-	"net/http"
-
+	_ "github.com/lib/pq"
 	"io/ioutil"
+	"net/http"
 )
 
 func (api *API) HandleUpdateEmail(w http.ResponseWriter, r *http.Request) {

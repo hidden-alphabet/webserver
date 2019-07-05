@@ -3,7 +3,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	"github.com/hidden-alphabet/webserver"
+	"github.com/hidden-alphabet/webserver/services/api"
 	_ "github.com/joho/godotenv/autoload"
 	"log"
 	"os"
