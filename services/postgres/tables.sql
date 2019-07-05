@@ -4,26 +4,24 @@ BEGIN
 CREATE TABLE IF NOT EXISTS user.account(
     id serial primary key,
     name text not null,
-    email text not null,
     hash bytea not null,
     salt bytea not null
 );
 
-CREATE TABLE IF NOT EXISTS user.meta(
+CREATE TABLE IF NOT EXISTS user.contact(
   id serial primary key,
   account_id int references user.account,
-  is_active boolean,
-  email_confirmed boolean,
-  email_confirmation_path text,
-  account_created_at timestamp default now()
+  email text not null,
+  has_confirmed_email boolean
 );
 
 CREATE TABLE IF NOT EXISTS user.session(
   id serial primary key,
   account_id int references user.account,
-  created_at timestamp default now(),
+  token bytea,
   active boolean,
-  token bytea
+  created_at timestamp default now(),
+  completed_at timestamp
 );
 
 CREATE TABLE IF NOT EXISTS user.api(
