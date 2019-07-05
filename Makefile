@@ -1,8 +1,5 @@
 # TODO: scp backed make for integrated cross machine deploys
 
-build:
-	docker build -t hiddenalphabet-api-server .
-
 start: .env bin/main
 	docker-compose up -d
 	./services/postgresql/init.sh
