@@ -1,6 +1,7 @@
 package api
 
 import (
+	"database/sql"
 	"github.com/gorilla/mux"
 )
 
