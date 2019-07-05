@@ -31,3 +31,6 @@ upload: bundle
 deploy: upload
 	ssh ubuntu@$(SERVER_HOST) docker-compose build
 	ssh ubuntu@$(SERVER_HOST) PG_PASSWORD=$(PG_PASSWORD) docker-compose restart
+
+hot-swap: build
+	scp $(PWD)/services/nginx/public/assets/js/app.js ubuntu@$(SERVER_HOST):~/services/nginx/public/assets/js/app.js
