@@ -26,9 +26,9 @@ func New(database *sql.DB) *Server {
 
 func (s *Server) Start() {
 	s.router.HandleFunc("/user/create", s.HandleCreateUser).Methods("POST")
-	s.router.HandleFunc("/user/update/email", s.AuthorizationRequired(s.HandleUpdateUserEmail)).Methods("PUT")
-	s.router.HandleFunc("/user/update/password", s.AuthorizationRequired(s.HandleUpdateUserPassword)).Methods("PUT")
-	s.router.HandleFunc("/user/delete", s.AuthorizationRequired(s.HandleDeleteUser)).Methods("DELETE")
+	s.router.HandleFunc("/user/update/email", s.SessionRequired(s.HandleUpdateUserEmail)).Methods("PUT")
+	s.router.HandleFunc("/user/update/password", s.SessionRequired(s.HandleUpdateUserPassword)).Methods("PUT")
+	s.router.HandleFunc("/user/delete", s.SessionRequired(s.HandleDeleteUser)).Methods("DELETE")
 	s.router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})

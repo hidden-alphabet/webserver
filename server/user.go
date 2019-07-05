@@ -15,7 +15,7 @@ import (
 	"time"
 )
 
-func (s *Server) AuthorizationRequired(h http.HandlerFunc) http.HandlerFunc {
+func (s *Server) SessionRequired(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		_, err := r.Cookie("__hiddenalphabet_session")
 		if err != nil {
