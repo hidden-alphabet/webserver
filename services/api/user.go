@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	_ "github.com/lib/pq"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"time"
 )
@@ -24,11 +25,15 @@ func (api *API) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	log.Println("Reading JSON")
+
 	err = json.Unmarshal(data, &req)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	log.Println("Beginning postgres transaction")
 
 	tx, err := api.database.Begin()
 	if err != nil {
@@ -37,17 +42,23 @@ func (api *API) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
 	}
 	defer tx.Rollback()
 
+	log.Println("Initializing user")
+
 	user, err := model.NewUser(req.Username, req.Password)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
+	log.Println("Adding new user to postgres")
+
 	id, err := user.Create(tx)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	log.Println("Adding user contact information to postgres")
 
 	contact := model.Contact{
 		AccountID: id,
@@ -59,18 +70,24 @@ func (api *API) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	session := model.Session{}
+	log.Println("Adding a new session")
+
+	session := model.Session{AccountID: id}
 	token, err := session.Create(tx)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
+	log.Println("Committing transaction to postgres")
+
 	err = tx.Commit()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	log.Println("Creating cookie.")
 
 	oneYearFromNow := time.Now().Add((356 / 2) * 24 * time.Hour)
 
@@ -82,10 +99,14 @@ func (api *API) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
 		HttpOnly: true,
 	})
 
+	log.Println("Sending response.")
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(APIResponse{Status: "successful"})
 
 	w.WriteHeader(http.StatusOK)
+
+	log.Println("Sending response.")
 }
 
 func (api *API) HandleUpdatePassword(w http.ResponseWriter, r *http.Request) {
