@@ -26,13 +26,6 @@ CREATE TABLE IF NOT EXISTS user.session(
   token bytea
 );
 
-CREATE TABLE IF NOT EXISTS user.resource(
-    id serial primary key,
-    account_id int references user.account,
-    name text,
-    endpoint text
-);
-
 CREATE TABLE IF NOT EXISTS user.api(
     id serial primary key,
     account_id int references user.account,
