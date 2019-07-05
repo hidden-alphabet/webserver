@@ -9,7 +9,7 @@ services:
       - backend
     ports:
       - 5432
-  apiserver:
+  api:
     image: hiddenalphabet-api-server
     networks:
       - backend
@@ -31,9 +31,9 @@ services:
       - 0.0.0.0:80:80
       - 0.0.0.0:443:443
     links:
-      - apiserver
+      - api
     depends_on:
-      - apiserver
+      - api
 
 networks:
   backend:
