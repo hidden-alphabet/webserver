@@ -1,8 +1,8 @@
 package api
 
 import (
-	"database/sql"
-	_ "github.com/lib/pq"
+	"./model"
+	"encoding/json"
 	"io/ioutil"
 	"net/http"
 )
@@ -19,7 +19,7 @@ func (api *API) HandleUpdateEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	req := model.UpdateRequest{SessionToken: cookie.Value()}
+	req := model.UpdateRequest{SessionToken: cookie.Value}
 
 	data, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -51,7 +51,7 @@ func (api *API) HandleUpdateEmail(w http.ResponseWriter, r *http.Request) {
 	defer tx.Rollback()
 
 	contact := model.Contact{}
-	err = contact.UpdateEmail(req, tx)
+	err = contact.UpdateEmail(&req, tx)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

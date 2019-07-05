@@ -3,6 +3,7 @@ package model
 import (
 	"database/sql"
 	"github.com/satori/go.uuid"
+	"strconv"
 )
 
 type Session struct {
@@ -21,18 +22,18 @@ func (s *Session) Create(tx *sql.Tx) (string, error) {
 
 	token, err := uuid.NewV4()
 	if err != nil {
-		return make(string), err
+		return "", err
 	}
 
 	stmt, err := tx.Prepare(query)
 	if err != nil {
-		return make(string), err
+		return "", err
 	}
 	defer stmt.Close()
 
-	_, err = stmt.Exec(c.AccountID, token.String(), false)
+	_, err = stmt.Exec(s.AccountID, token.Bytes(), false)
 	if err != nil {
-		return make(string), err
+		return "", err
 	}
 
 	return token.String(), nil
@@ -46,19 +47,19 @@ func (s *Session) Delete(req *UpdateRequest, tx *sql.Tx) error {
 
 	stmt, err := tx.Prepare(query)
 	if err != nil {
-		return make(string), err
+		return err
 	}
 	defer stmt.Close()
 
-	active, ok := bool.(req.New)
-	if !ok {
-		return make(string), err
+	active, err := strconv.ParseBool(req.New)
+	if err != nil {
+		return err
 	}
 
 	_, err = stmt.Exec(active, req.SessionToken, false)
 	if err != nil {
-		return "", err
+		return err
 	}
 
-	return token.String(), nil
+	return nil
 }

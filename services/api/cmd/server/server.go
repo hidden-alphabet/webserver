@@ -1,11 +1,13 @@
 package main
 
 import (
+	api "../.."
 	"database/sql"
 	"fmt"
-	"github.com/hidden-alphabet/webserver/services/api"
+	"github.com/gorilla/handlers"
 	_ "github.com/joho/godotenv/autoload"
 	"log"
+	"net/http"
 	"os"
 )
 
@@ -27,5 +29,5 @@ func main() {
 	api := api.New(postgres)
 
 	log.Println("Server started at :8080")
-	log.Fatal(http.ListenAndServe(":8080", handlers.LoggingHandler(os.Stdout, api.router)))
+	log.Fatal(http.ListenAndServe(":8080", handlers.LoggingHandler(os.Stdout, api.Router)))
 }

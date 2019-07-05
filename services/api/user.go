@@ -1,6 +1,7 @@
 package api
 
 import (
+	"./model"
 	"encoding/json"
 	_ "github.com/lib/pq"
 	"io/ioutil"
@@ -23,7 +24,7 @@ func (api *API) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = json.Unmarshal(data, req)
+	err = json.Unmarshal(data, &req)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -48,7 +49,7 @@ func (api *API) HandleCreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	contact = model.Contact{
+	contact := model.Contact{
 		AccountID: id,
 		Email:     req.Email,
 	}
@@ -99,7 +100,7 @@ func (api *API) HandleUpdatePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	req := model.UpdateRequest{SessionToken: cookie.Value()}
+	req := model.UpdateRequest{SessionToken: cookie.Value}
 
 	data, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -126,7 +127,7 @@ func (api *API) HandleUpdatePassword(w http.ResponseWriter, r *http.Request) {
 	defer tx.Rollback()
 
 	user := model.User{}
-	err = user.UpdatePassword(req)
+	err = user.UpdatePassword(&req, tx)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

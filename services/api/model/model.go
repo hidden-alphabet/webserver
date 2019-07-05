@@ -13,7 +13,7 @@ type UpdateRequest struct {
 
 func StringToSaltAndHash(s string) ([]byte, []byte, error) {
 	salt := make([]byte, 2056)
-	_, err = rand.Read(salt)
+	_, err := rand.Read(salt)
 	if err != nil {
 		return []byte{}, []byte{}, err
 	}

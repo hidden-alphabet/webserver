@@ -2,9 +2,9 @@ package model
 
 import (
 	"database/sql"
-	"encoding/json"
-	"io"
-	"io/ioutil"
+	"errors"
+	"golang.org/x/crypto/argon2"
+	"reflect"
 )
 
 type User struct {
@@ -15,21 +15,23 @@ type User struct {
 }
 
 func NewUser(username, password string) (*User, error) {
-	salt, hash, err := model.StringToSaltAndHash(password)
+	salt, hash, err := StringToSaltAndHash(password)
 	if err != nil {
 		return nil, err
 	}
 
-	return &User{
+	user := &User{
 		Name: username,
 		Hash: hash,
 		Salt: salt,
 	}
+
+	return user, nil
 }
 
 /* Add a new user to the database. */
 func (u *User) Create(tx *sql.Tx) (int, error) {
-	var id int64
+	var id int
 
 	query := "" +
 		"INSERT INTO user.account (name, hash, salt) " +
@@ -42,12 +44,12 @@ func (u *User) Create(tx *sql.Tx) (int, error) {
 	}
 	defer stmt.Close()
 
-	err = stmt.QueryRow(u.Username, u.Hash, u.Salt).Scan(&id)
+	err = stmt.QueryRow(u.Name, u.Hash, u.Salt).Scan(&id)
 	if err != nil {
 		return -1, err
 	}
 
-	return &id, nil
+	return id, nil
 }
 
 func (u *User) GetHash(token string, tx *sql.Tx) ([]byte, error) {
@@ -62,16 +64,16 @@ func (u *User) GetHash(token string, tx *sql.Tx) ([]byte, error) {
 
 	stmt, err := tx.Prepare(query)
 	if err != nil {
-		return nil, err
+		return hash, err
 	}
 	defer stmt.Close()
 
 	err = stmt.QueryRow(token).Scan(&hash)
 	if err != nil {
-		return nil, err
+		return hash, err
 	}
 
-	return &hash, nil
+	return hash, nil
 }
 
 func (u *User) GetSalt(token string, tx *sql.Tx) (*[]byte, error) {
@@ -98,7 +100,7 @@ func (u *User) GetSalt(token string, tx *sql.Tx) (*[]byte, error) {
 	return &salt, nil
 }
 
-func (u *User) GetSaltAndHash(token string, tx *sql.Tx) (*[]byte, *[]byte, error) {
+func (u *User) GetSaltAndHash(token string, tx *sql.Tx) ([]byte, []byte, error) {
 	var salt []byte
 	var hash []byte
 
@@ -111,16 +113,16 @@ func (u *User) GetSaltAndHash(token string, tx *sql.Tx) (*[]byte, *[]byte, error
 
 	stmt, err := tx.Prepare(query)
 	if err != nil {
-		return nil, err
+		return salt, hash, err
 	}
 	defer stmt.Close()
 
 	err = stmt.QueryRow(token).Scan(&hash, &salt)
 	if err != nil {
-		return nil, err
+		return salt, hash, err
 	}
 
-	return &salt, &hash, nil
+	return salt, hash, nil
 }
 
 func (u *User) ValidPassword(password string, token string, tx *sql.Tx) (bool, error) {
@@ -142,7 +144,12 @@ func (u *User) UpdatePassword(req *UpdateRequest, tx *sql.Tx) error {
 		"WHERE ua.id = us.account_id " +
 		"AND us.token = $3"
 
-	if !u.ValidPassword(req.Old, req.SessionToken, tx) {
+	valid, err := u.ValidPassword(req.Old, req.SessionToken, tx)
+	if err != nil {
+		return err
+	}
+
+	if !valid {
 		return errors.New("Invalid password")
 	}
 
@@ -157,10 +164,10 @@ func (u *User) UpdatePassword(req *UpdateRequest, tx *sql.Tx) error {
 	}
 	defer stmt.Close()
 
-	err = stmt.Exec(hash, salt, req.SessionToken)
+	_, err = stmt.Exec(hash, salt, req.SessionToken)
 	if err != nil {
 		return err
 	}
 
-	return nul
+	return nil
 }

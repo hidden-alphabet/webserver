@@ -2,6 +2,7 @@ package model
 
 import (
 	"database/sql"
+	"strconv"
 )
 
 type Contact struct {
@@ -33,11 +34,10 @@ func (c *Contact) Create(tx *sql.Tx) error {
 func (c *Contact) UpdateEmail(req *UpdateRequest, tx *sql.Tx) error {
 	query := "" +
 		"UPDATE user.account AS ua " +
-		"SET has_confirmed_email = $1 " +
+		"SET email = $1 " +
 		"FROM user.session AS us " +
 		"WHERE ua.id = us.account_id " +
-		"AND ua.email = $2 " +
-		"AND us.token = $3"
+		"AND us.token = $2"
 
 	stmt, err := tx.Prepare(query)
 	if err != nil {
@@ -56,10 +56,11 @@ func (c *Contact) UpdateEmail(req *UpdateRequest, tx *sql.Tx) error {
 func (c *Contact) UpdateEmailConfirmation(req *UpdateRequest, tx *sql.Tx) error {
 	query := "" +
 		"UPDATE user.account AS ua " +
-		"SET email = $1 " +
+		"SET has_confirmed_email = $1 " +
 		"FROM user.session AS us " +
 		"WHERE ua.id = us.account_id " +
-		"AND us.token = $2"
+		"AND ua.email = $2 " +
+		"AND us.token = $3"
 
 	stmt, err := tx.Prepare(query)
 	if err != nil {
@@ -67,12 +68,12 @@ func (c *Contact) UpdateEmailConfirmation(req *UpdateRequest, tx *sql.Tx) error 
 	}
 	defer stmt.Close()
 
-	confirmation, ok := bool.(req.New)
-	if !ok {
-		return errors.New("New value is not a boolean.")
+	status, err := strconv.ParseBool(req.New)
+	if err != nil {
+		return err
 	}
 
-	_, err = stmt.Exec(confirmation, req.SessionToken)
+	_, err = stmt.Exec(status, req.SessionToken)
 	if err != nil {
 		return err
 	}

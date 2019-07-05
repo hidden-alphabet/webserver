@@ -3,11 +3,16 @@ package api
 import (
 	"database/sql"
 	"github.com/gorilla/mux"
+	"net/http"
 )
 
 type API struct {
-	router   *mux.Router
+	Router   *mux.Router
 	database *sql.DB
+}
+
+type APIResponse struct {
+	Status string
 }
 
 func index(w http.ResponseWriter, r *http.Request) {
@@ -15,16 +20,18 @@ func index(w http.ResponseWriter, r *http.Request) {
 }
 
 func New(database *sql.DB) *API {
+	router := mux.NewRouter()
+
 	api := &API{
-		router:   mux.NewRouter(),
+		Router:   router,
 		database: database,
 	}
 
-	api.router.HandleFunc("/", index)
-	api.router.HandleFunc("/user/create", HandleCreateUser).Methods("POST")
-	api.router.HandleFunc("/user/update/password", HandleUpdatePassword).Methods("PUT")
-	api.router.HandleFunc("/contact/update/email", HandleUpdateEmail).Methods("PUT")
-	api.router.HandleFunc("/contact/update/confirmation", HandleUpdateEmail).Methods("GET")
+	router.HandleFunc("/", index)
+	router.HandleFunc("/user/create", api.HandleCreateUser).Methods("POST")
+	router.HandleFunc("/user/update/password", api.HandleUpdatePassword).Methods("PUT")
+	router.HandleFunc("/contact/update/email", api.HandleUpdateEmail).Methods("PUT")
+	router.HandleFunc("/contact/update/confirmation", api.HandleUpdateEmail).Methods("GET")
 
 	return api
 }
