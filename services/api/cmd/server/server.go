@@ -21,6 +21,8 @@ func main() {
 	template := "postgres://%s:%s@%s:%s/%s?sslmode=disable"
 	url := fmt.Sprintf(template, username, password, host, port, database)
 
+	log.Println("Connecting to", url)
+
 	postgres, err := sql.Open("postgres", url)
 	if err != nil {
 		log.Fatal(err)
