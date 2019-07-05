@@ -4,7 +4,7 @@ WORKDIR /app
 
 COPY model/ model/
 COPY cmd/ cmd/
-COPY *.go .
+COPY *.go ./
 
 RUN apk add git
 
@@ -22,7 +22,6 @@ RUN go get -u -v github.com/gorilla/handlers && \
 
 RUN apk del git
 
-RUN mkdir -p bin && \
-    go build -o bin/server cmd/server/server.go
+RUN mkdir -p bin && go build -o bin/server cmd/server/server.go
 
 ENTRYPOINT ["./bin/server"]
