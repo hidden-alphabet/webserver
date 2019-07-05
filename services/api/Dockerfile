@@ -2,10 +2,6 @@ FROM golang:alpine
 
 WORKDIR /app
 
-COPY model/ model/
-COPY cmd/ cmd/
-COPY *.go ./
-
 RUN apk add git
 
 RUN go get -u -v github.com/gorilla/handlers && \
@@ -21,6 +17,10 @@ RUN go get -u -v github.com/gorilla/handlers && \
       go get -u -v golang.org/x/sys/cpu
 
 RUN apk del git
+
+COPY model/ model/
+COPY cmd/ cmd/
+COPY *.go ./
 
 RUN mkdir -p bin && go build -o bin/server cmd/server/server.go
 
