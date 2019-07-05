@@ -1,5 +1,6 @@
 bin
 .env
 *.pid
-services/postgres/data
 *.zip
+services/postgres/data
+services/nginx/public/assets
