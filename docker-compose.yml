@@ -9,8 +9,8 @@ services:
       - backend
     ports:
       - 5432
-  webserver:
-    image: infrastructureascode/hello-world
+  apiserver:
+    image: hiddenalphabet-api-server
     networks:
       - backend
     ports:
@@ -31,9 +31,9 @@ services:
       - 0.0.0.0:80:80
       - 0.0.0.0:443:443
     links:
-      - webserver
+      - apiserver
     depends_on:
-      - webserver
+      - apiserver
 
 networks:
   backend:
