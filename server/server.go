@@ -24,7 +24,7 @@ func New(database *sql.DB) *Server {
 	}
 }
 
-func (s *Server) Start() {
+func (s *Server) Start(port int) {
 	s.router.HandleFunc("/user/create", s.HandleCreateUser).Methods("POST")
 	s.router.HandleFunc("/user/update/email", s.SessionRequired(s.HandleUpdateUserEmail)).Methods("PUT")
 	s.router.HandleFunc("/user/update/password", s.SessionRequired(s.HandleUpdateUserPassword)).Methods("PUT")
@@ -33,7 +33,7 @@ func (s *Server) Start() {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	log.Println("Server started at 0.0.0.0:8081.")
+	log.Println(fmt.Sprintf("Server started at 0.0.0.0:%s.", port))
 
-	log.Fatal(http.ListenAndServe(":8081", handlers.LoggingHandler(os.Stdout, s.router)))
+	log.Fatal(http.ListenAndServe(fmt.Sprinf(":%s", port), handlers.LoggingHandler(os.Stdout, s.router)))
 }

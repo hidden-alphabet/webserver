@@ -55,5 +55,5 @@ func main() {
 	}
 
 	s := server.New(database)
-	s.Start()
+	s.Start(8080)
 }
