@@ -20,3 +20,8 @@ bundle:
 	zip bundle.zip package-lock.json
 	zip bundle.zip package.json
 	zip bundle.zip webpack.config.js
+
+upload: bundle
+	ssh ubuntu@$(SERVER_HOST) rm -rf ~/
+	scp bundle.zip ubuntu@$(SERVER_HOST):~/
+	ssh ubuntu@$(SERVER_HOST) unzip bundle.zip
