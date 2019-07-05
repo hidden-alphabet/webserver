@@ -10,14 +10,14 @@ CREATE TABLE IF NOT EXISTS web.account(
 
 CREATE TABLE IF NOT EXISTS web.contact(
   id serial primary key,
-  account_id int references web.account,
+  account_id int references web.account(id),
   email text not null,
   has_confirmed_email boolean
 );
 
 CREATE TABLE IF NOT EXISTS web.session(
   id serial primary key,
-  account_id int references web.account,
+  account_id int references web.account(id),
   token bytea,
   active boolean,
   created_at timestamp default now(),
@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS web.session(
 
 CREATE TABLE IF NOT EXISTS web.api(
     id serial primary key,
-    account_id int references web.account,
+    account_id int references web.account(id),
     key text,
     secret text,
     salt text,
