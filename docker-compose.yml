@@ -9,8 +9,31 @@ services:
       - backend
     ports:
       - 5432
+  setup:
+    image: setup
+    environment:
+      - ENV=production
+      - PG_HOST=postgres
+      - PG_PORT=5432
+      - PG_USER=api
+      - PG_PASSWORD=${PG_PASSWORD}
+      - PG_DATABASE=api
+    build: ./services/postgres/setup
+    networks:
+      - backend
+    links:
+      - postgres
+    depends_on:
+      - postgres
   api:
     image: api
+    environment:
+      - ENV=production
+      - PG_HOST=postgres
+      - PG_PORT=5432
+      - PG_USER=api
+      - PG_PASSWORD=${PG_PASSWORD}
+      - PG_DATABASE=api
     build: ./services/api
     networks:
       - backend
@@ -19,7 +42,7 @@ services:
     links:
       - postgres
     depends_on:
-      - postgres
+      - setup
   nginx:
     image: nginx
     volumes:

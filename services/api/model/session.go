@@ -17,7 +17,7 @@ type Session struct {
 
 func (s *Session) Create(tx *sql.Tx) (string, error) {
 	query := "" +
-		"INSERT INTO user.session (account_id, token, active) " +
+		"INSERT INTO web.session (account_id, token, active) " +
 		"VALUES ($1, $2, $3)"
 
 	token, err := uuid.NewV4()
@@ -41,7 +41,7 @@ func (s *Session) Create(tx *sql.Tx) (string, error) {
 
 func (s *Session) Delete(req *UpdateRequest, tx *sql.Tx) error {
 	query := "" +
-		"UPDATE user.session AS as " +
+		"UPDATE web.session AS as " +
 		"SET active = $1, completed_at = now() " +
 		"WHERE as.token = $2 "
 

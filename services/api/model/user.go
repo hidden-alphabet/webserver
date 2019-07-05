@@ -34,7 +34,7 @@ func (u *User) Create(tx *sql.Tx) (int, error) {
 	var id int
 
 	query := "" +
-		"INSERT INTO user.account (name, hash, salt) " +
+		"INSERT INTO web.account (name, hash, salt) " +
 		"VALUES ($1, $2, $3) " +
 		"RETURNING id"
 
@@ -57,8 +57,8 @@ func (u *User) GetHash(token string, tx *sql.Tx) ([]byte, error) {
 
 	query := "" +
 		"SELECT hash " +
-		"FROM user.account AS ua " +
-		"INNER JOIN user.session AS us " +
+		"FROM web.account AS ua " +
+		"INNER JOIN web.session AS us " +
 		"ON ua.id = us.account_id " +
 		"WHERE us.token = $1"
 
@@ -81,8 +81,8 @@ func (u *User) GetSalt(token string, tx *sql.Tx) (*[]byte, error) {
 
 	query := "" +
 		"SELECT salt " +
-		"FROM user.account AS ua " +
-		"INNER JOIN user.session AS us " +
+		"FROM web.account AS ua " +
+		"INNER JOIN web.session AS us " +
 		"ON ua.id = us.account_id " +
 		"WHERE us.token = $1"
 
@@ -106,8 +106,8 @@ func (u *User) GetSaltAndHash(token string, tx *sql.Tx) ([]byte, []byte, error) 
 
 	query := "" +
 		"SELECT hash, salt " +
-		"FROM user.account AS ua " +
-		"INNER JOIN user.session AS us " +
+		"FROM web.account AS ua " +
+		"INNER JOIN web.session AS us " +
 		"ON ua.id = us.account_id " +
 		"WHERE us.token = $1"
 
@@ -138,9 +138,9 @@ func (u *User) ValidPassword(password string, token string, tx *sql.Tx) (bool, e
 
 func (u *User) UpdatePassword(req *UpdateRequest, tx *sql.Tx) error {
 	query := "" +
-		"UPDATE user.account " +
+		"UPDATE web.account " +
 		"SET hash = $1, salt = $2 " +
-		"FROM user.session AS us " +
+		"FROM web.session AS us " +
 		"WHERE ua.id = us.account_id " +
 		"AND us.token = $3"
 

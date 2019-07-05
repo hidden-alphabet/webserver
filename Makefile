@@ -26,4 +26,5 @@ upload: bundle
 	ssh ubuntu@$(SERVER_HOST) unzip bundle.zip
 
 deploy: upload
-	ssh ubuntu@$(SERVER_HOST) docker-compose restart
+	ssh ubuntu@$(SERVER_HOST) docker-compose build
+	ssh ubuntu@$(SERVER_HOST) PG_PASSWORD=$(PG_PASSWORD) docker-compose restart
