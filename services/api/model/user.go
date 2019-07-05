@@ -138,7 +138,7 @@ func (u *User) ValidPassword(password string, token string, tx *sql.Tx) (bool, e
 
 func (u *User) UpdatePassword(req *UpdateRequest, tx *sql.Tx) error {
 	query := "" +
-		"UPDATE web.account " +
+		"UPDATE web.account AS ua" +
 		"SET hash = $1, salt = $2 " +
 		"FROM web.session AS us " +
 		"WHERE ua.id = us.account_id " +
