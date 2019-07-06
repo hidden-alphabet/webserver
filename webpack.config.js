@@ -39,15 +39,19 @@ module.exports =  {
     output: {
         path: path.resolve(__dirname, 'services/nginx/public/assets/'),
         filename: "js/app.js",
-        publicPath: "services/nginx/public/assets"
+        publicPath: "/"
     },
     devServer: {
         contentBase: [
           path.join(__dirname, 'services/nginx/public/'),
           path.join(__dirname, 'services/nginx/public/assets')
         ],
+        historyApiFallback: true,
         clientLogLevel: 'debug',
         compress: true,
+        watchOptions: {
+          poll: true
+        },
         port: 8082
     }
 }

@@ -25,7 +25,7 @@
     "webpack-dev-server": "^3.7.2"
   },
   "scripts": {
-    "dev": "webpack-dev-server",
+    "dev": "webpack-dev-server --open --watch-content-base --liveReload --progress --compress",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
