@@ -39,10 +39,14 @@ module.exports =  {
     output: {
         path: path.resolve(__dirname, 'services/nginx/public/assets/'),
         filename: "js/app.js",
-        publicPath: "/assets"
+        publicPath: "services/nginx/public/assets"
     },
     devServer: {
-        contentBase: path.join(__dirname, 'services/nginx/public/assets'),
+        contentBase: [
+          path.join(__dirname, 'services/nginx/public/'),
+          path.join(__dirname, 'services/nginx/public/assets')
+        ],
+        clientLogLevel: 'debug',
         compress: true,
         port: 8082
     }
