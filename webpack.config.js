@@ -8,7 +8,11 @@ module.exports =  {
         {
           test: /\.(js)$/,
           exclude: /node_modules/,
-          loaders: ["babel-loader"],
+          use: [
+            {
+              loader: "babel-loader"
+            }
+          ]
         },
         {
           test: /\.(css)$/,
@@ -16,16 +20,29 @@ module.exports =  {
             'style-loader',
             'css-loader'
           ]
+        },
+        {
+          test: /\.(jpg)$/,
+          use: [
+            {
+              loader: 'file-loader',
+              options: {
+                name: '[name].[ext]',
+                publicPath: '/img',
+                outputPath: '/img',
+              }
+            }
+          ]
         }
       ]
     },
     output: {
-        path: path.resolve(__dirname, 'services/nginx/public/assets/js'),
-        filename: "app.js",
-        publicPath: "/assets/js"
+        path: path.resolve(__dirname, 'services/nginx/public/assets/'),
+        filename: "js/app.js",
+        publicPath: "/assets"
     },
     devServer: {
-        contentBase: path.join(__dirname, 'services/nginx/public/assets/js'),
+        contentBase: path.join(__dirname, 'services/nginx/public/assets'),
         compress: true,
         port: 8082
     }

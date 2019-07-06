@@ -10,27 +10,10 @@ import { Account } from './src/Account'
 
 import './styles/Main.css'
 
-const ImageBackground = props =>
-  <div 
-  style={{ 
-    width: '100%', 
-    height: '100%',
-    backgroundColor: 'black',
-    position: 'relative', 
-    background: "linear-gradient(left, rgba(0,0,0,0.65) 20%, rgba(0,0,0,0) 20%, rgba(0,0,0,0) 80%, rgba(0,0,0,0.65) 100%)",
-    backgroundRepeat: 'no-repeat' 
-  }
-  }>
-    <div 
-      style={{ 
-        width: '100%', 
-        height: '100%',
-        position: 'absolute',
-        backgroundSize: 'cover',
-        backgroundImage: "url("+props.url+")" 
-      }}
-    >
-    {props.children}
+const LandingBackground = props =>
+  <div id='landing-background-conntainer'>
+    <div id='landing-background'>
+      {props.children}
     </div>
   </div>
 
@@ -50,7 +33,7 @@ const CallToActionButton = _ =>
         boxShadow: '2px',
         fontSize: '13px'
       }} 
-      value="Read The Docs"
+      value="Get Started"
       >
       </input>
     </a>
@@ -86,7 +69,7 @@ const CallToAction = _ =>
   </div>
 
 const Home = _ =>
-  <ImageBackground url="./static/background.jpg">
+  <LandingBackground>
     <Fontified>
       <Header>
         {/*}
@@ -155,7 +138,7 @@ const Home = _ =>
       </div>
       
     </Fontified>
-  </ImageBackground>
+  </LandingBackground>
 
 const App = _ =>
    <Router>
