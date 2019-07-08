@@ -11,6 +11,7 @@ import { Account } from './src/Account'
 import './styles/Main.css'
 
 import comparison from './static/comparison.png'
+import infrastructure from './static/infrastructure.png'
 
 const LandingBackground = props =>
   <div id='landing-background-container'>
@@ -135,7 +136,7 @@ const Home = _ =>
           alignItems: 'center'
         }}>
           <h1>AWS Archiecture</h1> 
-          <img style={{ wifth: 'auto', heigth: 'auto', maxWidth: '900px', maxHeight: '1000px', backgroundColor: 'white' }} src="https://i.imgur.com/ZJlTFCS.png"></img>
+          <img style={{ wifth: 'auto', heigth: 'auto', maxWidth: '900px', maxHeight: '1000px', backgroundColor: 'white' }} src={infrastructure}></img>
         </div>
       </div>
       
