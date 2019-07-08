@@ -10,8 +10,10 @@ import { Account } from './src/Account'
 
 import './styles/Main.css'
 
+import comparison from './static/comparison.png'
+
 const LandingBackground = props =>
-  <div id='landing-background-conntainer'>
+  <div id='landing-background-container'>
     <div id='landing-background'>
       {props.children}
     </div>
@@ -93,7 +95,7 @@ const Home = _ =>
           justifyContent: 'center',
           alignItems: 'center'
         }}>
-          <img style={{ backgroundColor: 'white' }} src="https://i.imgur.com/K9mYxGk.png"></img>
+          <img style={{ backgroundColor: 'white' }} src={comparison}></img>
         </div>
         <div style={{ 
           height: '500px', 
